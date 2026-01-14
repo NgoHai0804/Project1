@@ -6,12 +6,7 @@ class VehicleProcessor:
     """Xử lý và tracking vehicles trong ROI"""
     
     def __init__(self, save_dir="Cars"):
-        """
-        Khởi tạo processor
-        
-        Args:
-            save_dir: Thư mục lưu ảnh vehicles
-        """
+        """Khởi tạo processor"""
         self.save_dir = save_dir
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
@@ -66,13 +61,14 @@ class VehicleProcessor:
                     cls_name = "vehicle"
                     conf = 0.0
                 
-                cv2.rectangle(frame, (x3, y3), (x4, y4), (255, 0, 0), 1)
-                cv2.circle(frame, (cx, cy), 4, (0, 0, 255), -1)
                 
+                cv2.rectangle(frame, (x3, y3), (x4, y4), (255, 0, 0), 1) # Vẽ viền xung quanh xe
+                cv2.circle(frame, (cx, cy), 4, (0, 0, 255), -1)          # Vẽ chấm đỏ
+                
+                # Vẽ thông tin xe
                 conf_percent = int(conf * 100)
                 label = f"ID:{vehicle_id} {cls_name} {conf_percent}%"
-                cv2.putText(frame, label, (x3, y3 - 10), 
-                           cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 255, 255), 1)
+                cv2.putText(frame, label, (x3, y3 - 10), cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 255, 255), 1)
                 
                 if vehicle_id not in self.detected_vehicles[roi_id]:
                     self.detected_vehicles[roi_id][vehicle_id] = {

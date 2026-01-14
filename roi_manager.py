@@ -10,15 +10,7 @@ class ROIManager:
         self.next_roi_id = 1
     
     def add_roi(self, x1, y1, x2, y2):
-        """
-        Thêm ROI mới
-        
-        Args:
-            x1, y1, x2, y2: Tọa độ ROI
-            
-        Returns:
-            roi_id: ID của ROI vừa tạo
-        """
+        """roi_id: ID của ROI vừa tạo"""
         roi_id = self.next_roi_id
         self.rois[roi_id] = {
             'coords': (x1, y1, x2, y2),

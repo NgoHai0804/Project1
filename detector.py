@@ -57,21 +57,22 @@ class VehicleDetector:
         
         conf_threshold = self.confidence_threshold / 100.0
         results = self.yolo_model.predict(
-            frame, 
-            verbose=False, 
-            imgsz=self.detect_imgsz,
-            conf=conf_threshold,
-            half=False,
-            device='cpu'
+            frame,                 # Ảnh đầu vào
+            verbose=False,         # Tắt log
+            imgsz=self.detect_imgsz,  # Kích thước resize ảnh
+            conf=conf_threshold,   # Ngưỡng độ tin cậy
+            half=False,            # Không dùng FP16 (CPU)
+            device='cpu'           # Chạy trên CPU
         )
+
         boxes = results[0].boxes.data
         df = pd.DataFrame(boxes).astype(float)
 
         vehicle_boxes = []
         for _, row in df.iterrows():
             x1, y1, x2, y2 = int(row[0]), int(row[1]), int(row[2]), int(row[3])
-            cls_id = int(row[5])
-            confidence = float(row[4])
+            cls_id = int(row[5]) # id trong danh sách coco
+            confidence = float(row[4]) # tỷ lệ %
             
             if cls_id < len(self.class_list):
                 cls_name = self.class_list[cls_id]

@@ -2,7 +2,7 @@ from collections import defaultdict
 import math
 
 class Tracker:
-    def __init__(self, max_distance=40, max_history=40):
+    def __init__(self, max_distance=100, max_history=30):
         self.track_history = defaultdict(lambda: [])
         self.id_count = 0
         self.max_distance = max_distance
