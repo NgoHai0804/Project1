@@ -20,14 +20,11 @@ class VehicleDetector:
         self.confidence_threshold = confidence_threshold
         self.detect_imgsz = detect_imgsz
         
-        # Load class list
         with open(class_file, "r") as f:
             self.class_list = f.read().split("\n")
         
-        # Load YOLO model
         self.yolo_model = YOLO(model_path)
         
-        # Detection cache
         self.last_detect_frame = -1
         self.last_detections = []
     
@@ -51,7 +48,6 @@ class VehicleDetector:
         Returns:
             List các bounding boxes: [[x1, y1, x2, y2, cls_name, confidence], ...]
         """
-        # Skip frames để cải thiện FPS
         if not force and (current_frame - self.last_detect_frame) < detect_skip_frames:
             return self.last_detections
         
@@ -59,8 +55,7 @@ class VehicleDetector:
             self.last_detections = []
             return []
         
-        # Chạy YOLO detection
-        conf_threshold = self.confidence_threshold / 100.0  # Chuyển từ % sang decimal
+        conf_threshold = self.confidence_threshold / 100.0
         results = self.yolo_model.predict(
             frame, 
             verbose=False, 
@@ -81,11 +76,9 @@ class VehicleDetector:
             if cls_id < len(self.class_list):
                 cls_name = self.class_list[cls_id]
                 
-                # Chỉ lưu box nếu nằm trong danh sách target_classes và confidence >= threshold
                 if cls_name in target_classes and confidence >= conf_threshold:
                     vehicle_boxes.append([x1, y1, x2, y2, cls_name, confidence])
         
-        # Cache kết quả
         self.last_detections = vehicle_boxes
         self.last_detect_frame = current_frame
         

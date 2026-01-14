@@ -6,7 +6,7 @@ class ROIManager:
     
     def __init__(self):
         """Khởi tạo ROI manager"""
-        self.rois = {}  # {roi_id: {'coords': (x1, y1, x2, y2), 'tracker': Tracker(), 'saved_ids': set()}}
+        self.rois = {}
         self.next_roi_id = 1
     
     def add_roi(self, x1, y1, x2, y2):
@@ -39,7 +39,6 @@ class ROIManager:
         """Cập nhật tọa độ ROI"""
         if roi_id in self.rois:
             self.rois[roi_id]['coords'] = (x1, y1, x2, y2)
-            # Reset tracker khi thay đổi ROI
             self.rois[roi_id]['tracker'] = Tracker()
             self.rois[roi_id]['saved_ids'] = set()
             return True

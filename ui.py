@@ -20,77 +20,62 @@ class MainWindow(QWidget):
     
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("🚗 Vehicle Detection Dashboard")
+        self.setWindowTitle("Vehicle Detection Dashboard")
         self.resize(1300, 720)
 
-        # Video control
         self.cap = None
         self.total_frames = 0
         self.current_frame = 0
         self.is_playing = False
         
-        # Frame size
         self.frame_width = 900
         self.frame_height = 520
         
-        # Detection settings
         self.model_path = "yolov8s.pt"
         self.class_file = "coco.txt"
-        self.confidence_threshold = 40  # Mặc định 40%
+        self.confidence_threshold = 40
         self.detect_skip_frames = 2
         self.detect_imgsz = 416
         
-        # Components
         self.detector = None
         self.roi_manager = ROIManager()
         self.vehicle_processor = VehicleProcessor()
-        self.current_roi_id = None  # ROI đang được chọn để chỉnh sửa
+        self.current_roi_id = None
         
-        # FPS tracking
         self.fps_start_time = time.time()
         self.fps_frame_count = 0
         self.current_fps = 0
 
-        # UI setup
         self.setup_ui()
-        
-        # Initialize detection model
         self.init_detector()
 
     def setup_ui(self):
         """Thiết lập giao diện"""
-        # Video widget
         self.video_widget = VideoWidget()
         self.slider = QSlider(Qt.Horizontal)
         self.slider.sliderMoved.connect(self.seek_video)
 
-        # Buttons
-        self.btn_open = QPushButton("📂 Open Video")
-        self.btn_play = QPushButton("▶ Play")
+        self.btn_open = QPushButton("Open Video")
+        self.btn_play = QPushButton("Play")
         self.btn_open.clicked.connect(self.open_video)
         self.btn_play.clicked.connect(self.toggle_play)
 
-        # Tools panel
         self.tools_panel = self.create_tools_panel()
 
-        # Top control bar
         top_bar = QHBoxLayout()
         top_bar.addWidget(self.btn_open)
         top_bar.addWidget(self.btn_play)
         top_bar.addStretch()
 
-        # Left panel
         left_layout = QVBoxLayout()
         left_layout.addLayout(top_bar)
         left_layout.addWidget(self.video_widget)
         left_layout.addWidget(self.slider)
 
-        # Main layout
         main_layout = QHBoxLayout(self)
         main_layout.addLayout(left_layout, 3)
         main_layout.addWidget(self.tools_panel, 1)
 
-        # Timer
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_video)
 
@@ -104,13 +89,12 @@ class MainWindow(QWidget):
                 detect_imgsz=self.detect_imgsz
             )
             
-            # Thêm ROI mặc định
             self.roi_manager.add_roi(0, 100, 600, 400)
             self.update_roi_list()
             
-            print("✅ Detector initialized successfully!")
+            print("Detector initialized successfully!")
         except Exception as e:
-            print(f"❌ Error initializing detector: {e}")
+            print(f"Error initializing detector: {e}")
 
     def get_target_classes(self):
         """Lấy danh sách loại phương tiện được chọn"""
@@ -129,8 +113,7 @@ class MainWindow(QWidget):
         """Tạo panel công cụ bên phải"""
         panel = QVBoxLayout()
 
-        # Group: Loại phương tiện
-        group_vehicle = QGroupBox("🚙 Loại phương tiện")
+        group_vehicle = QGroupBox("Loại phương tiện")
         vbox_vehicle = QVBoxLayout()
         self.cb_car = QCheckBox("Car")
         self.cb_truck = QCheckBox("Truck")
@@ -149,7 +132,6 @@ class MainWindow(QWidget):
         vbox_vehicle.addWidget(self.cb_bus)
         vbox_vehicle.addWidget(self.cb_motor)
         
-        # Confidence threshold
         hbox_conf = QHBoxLayout()
         hbox_conf.addWidget(QLabel("Confidence (%):"))
         self.spin_confidence = QSpinBox()
@@ -163,27 +145,23 @@ class MainWindow(QWidget):
         
         group_vehicle.setLayout(vbox_vehicle)
 
-        # Group: Quản lý ROI
-        group_roi = QGroupBox("📍 Quản lý ROI")
+        group_roi = QGroupBox("Quản lý ROI")
         vbox_roi = QVBoxLayout()
         
-        # Danh sách ROI
         self.roi_list_widget = QListWidget()
         self.roi_list_widget.itemSelectionChanged.connect(self.on_roi_selected)
         vbox_roi.addWidget(QLabel("Danh sách ROI:"))
         vbox_roi.addWidget(self.roi_list_widget)
         
-        # Buttons thêm/xóa ROI
         hbox_roi_buttons = QHBoxLayout()
-        self.btn_add_roi = QPushButton("➕ Thêm ROI")
-        self.btn_delete_roi = QPushButton("➖ Xóa ROI")
+        self.btn_add_roi = QPushButton("Thêm ROI")
+        self.btn_delete_roi = QPushButton("Xóa ROI")
         self.btn_add_roi.clicked.connect(self.on_add_roi_clicked)
         self.btn_delete_roi.clicked.connect(self.on_delete_roi_clicked)
         hbox_roi_buttons.addWidget(self.btn_add_roi)
         hbox_roi_buttons.addWidget(self.btn_delete_roi)
         vbox_roi.addLayout(hbox_roi_buttons)
         
-        # Editor tọa độ ROI
         vbox_roi.addWidget(QLabel("Tọa độ ROI:"))
         hbox_x1 = QHBoxLayout()
         hbox_x1.addWidget(QLabel("X1:"))
@@ -228,14 +206,12 @@ class MainWindow(QWidget):
         
         group_roi.setLayout(vbox_roi)
 
-        # Group: Danh sách xe
-        group_list = QGroupBox("🖼 Xe trong ROI")
+        group_list = QGroupBox("Xe trong ROI")
         vbox_list = QVBoxLayout()
         self.list_widget = QListWidget()
         vbox_list.addWidget(self.list_widget)
         group_list.setLayout(vbox_list)
 
-        # FPS display
         self.fps_label = QLabel("FPS: 0")
         self.fps_label.setStyleSheet("font-weight: bold; color: green;")
 
@@ -263,7 +239,6 @@ class MainWindow(QWidget):
         for roi_id in rois:
             self.roi_manager.reset_roi(roi_id)
 
-    # ---------------- ROI MANAGEMENT ----------------
     def update_roi_list(self):
         """Cập nhật danh sách ROI trong list widget"""
         self.roi_list_widget.clear()
@@ -288,7 +263,6 @@ class MainWindow(QWidget):
         if roi_data:
             self.current_roi_id = roi_id
             x1, y1, x2, y2 = roi_data['coords']
-            # Block signals để tránh trigger on_roi_coords_changed khi set giá trị từ selection
             self.spin_x1.blockSignals(True)
             self.spin_y1.blockSignals(True)
             self.spin_x2.blockSignals(True)
@@ -325,16 +299,13 @@ class MainWindow(QWidget):
             x2 = self.spin_x2.value()
             y2 = self.spin_y2.value()
             
-            # Kiểm tra tính hợp lệ của tọa độ
             if x1 >= x2 or y1 >= y2:
                 return
             
             self.roi_manager.update_roi_coords(self.current_roi_id, x1, y1, x2, y2)
             self.vehicle_processor.reset_roi_vehicles(self.current_roi_id)
-            # Block signals để tránh loop khi update list
             self.roi_list_widget.blockSignals(True)
             self.update_roi_list()
-            # Chọn lại item hiện tại sau khi update
             for i in range(self.roi_list_widget.count()):
                 item = self.roi_list_widget.item(i)
                 if f"ROI {self.current_roi_id}:" in item.text():
@@ -348,7 +319,6 @@ class MainWindow(QWidget):
         x2, y2 = 200, 200
         roi_id = self.roi_manager.add_roi(x1, y1, x2, y2)
         self.current_roi_id = roi_id
-        # Block signals để tránh trigger on_roi_coords_changed khi set giá trị mới
         self.spin_x1.blockSignals(True)
         self.spin_y1.blockSignals(True)
         self.spin_x2.blockSignals(True)
@@ -361,7 +331,6 @@ class MainWindow(QWidget):
         self.spin_y1.blockSignals(False)
         self.spin_x2.blockSignals(False)
         self.spin_y2.blockSignals(False)
-        # Chọn item trong list
         self.roi_list_widget.blockSignals(True)
         self.update_roi_list()
         for i in range(self.roi_list_widget.count()):
@@ -388,7 +357,6 @@ class MainWindow(QWidget):
         for item_text in vehicle_list:
             self.list_widget.addItem(item_text)
 
-    # ---------------- VIDEO CONTROL ----------------
     def open_video(self):
         """Mở video file"""
         file_path, _ = QFileDialog.getOpenFileName(
@@ -405,7 +373,6 @@ class MainWindow(QWidget):
         self.slider.setMaximum(self.total_frames)
         self.current_frame = 0
         
-        # Reset vehicle tracking
         self.vehicle_processor.reset_all()
         rois = self.roi_manager.get_all_rois()
         for roi_id in rois:
@@ -418,7 +385,7 @@ class MainWindow(QWidget):
         self.fps_start_time = time.time()
         
         self.is_playing = True
-        self.btn_play.setText("⏸ Pause")
+        self.btn_play.setText("Pause")
         self.timer.start(30)
 
     def toggle_play(self):
@@ -429,10 +396,10 @@ class MainWindow(QWidget):
         self.is_playing = not self.is_playing
         if self.is_playing:
             self.timer.start(30)
-            self.btn_play.setText("⏸ Pause")
+            self.btn_play.setText("Pause")
         else:
             self.timer.stop()
-            self.btn_play.setText("▶ Play")
+            self.btn_play.setText("Play")
 
     def seek_video(self, frame_id):
         """Seek đến frame cụ thể"""
@@ -446,7 +413,6 @@ class MainWindow(QWidget):
         if ret:
             frame = cv2.resize(frame, (self.frame_width, self.frame_height))
             
-            # Vẽ tất cả ROI overlay
             rois = self.roi_manager.get_all_rois()
             for roi_id, roi_data in rois.items():
                 x1, y1, x2, y2 = roi_data['coords']
@@ -458,7 +424,6 @@ class MainWindow(QWidget):
                 cv2.putText(frame, f"ROI {roi_id}", (x1, y1 - 10), 
                            cv2.FONT_HERSHEY_COMPLEX, 0.6, color, 2)
             
-            # Nhận diện và vẽ vehicles
             if self.detector:
                 target_classes = self.get_target_classes()
                 vehicle_boxes = self.detector.detect(frame, target_classes, self.current_frame, self.detect_skip_frames, force=True)
@@ -488,10 +453,8 @@ class MainWindow(QWidget):
         self.slider.setValue(self.current_frame)
         self.slider.blockSignals(False)
 
-        # Resize frame
         frame = cv2.resize(frame, (self.frame_width, self.frame_height))
         
-        # Vẽ tất cả ROI overlay
         rois = self.roi_manager.get_all_rois()
         if rois:
             overlay = frame.copy()
@@ -500,7 +463,6 @@ class MainWindow(QWidget):
                 cv2.rectangle(overlay, (x1, y1), (x2, y2), (0, 255, 0), -1)
             cv2.addWeighted(overlay, 0.2, frame, 0.8, 0, frame)
             
-            # Vẽ viền ROI
             for roi_id, roi_data in rois.items():
                 x1, y1, x2, y2 = roi_data['coords']
                 color = ((roi_id * 50) % 255, (roi_id * 80) % 255, (roi_id * 120) % 255)
@@ -508,16 +470,13 @@ class MainWindow(QWidget):
                 cv2.putText(frame, f"ROI {roi_id}", (x1, y1 - 10), 
                            cv2.FONT_HERSHEY_COMPLEX, 0.6, color, 2)
         
-        # Nhận diện phương tiện
         if self.detector:
             target_classes = self.get_target_classes()
             vehicle_boxes = self.detector.detect(frame, target_classes, self.current_frame, self.detect_skip_frames)
             
-            # Xử lý ROI và tracking
             if vehicle_boxes:
                 frame = self.vehicle_processor.process_rois(frame, vehicle_boxes, rois)
         
-        # Tính FPS
         self.fps_frame_count += 1
         if self.current_frame % 30 == 0:
             elapsed = time.time() - self.fps_start_time
@@ -526,14 +485,12 @@ class MainWindow(QWidget):
                 self.fps_label.setText(f"FPS: {self.current_fps:.1f}")
             self.fps_start_time = time.time()
         
-        # Cập nhật danh sách vehicles
         if self.current_frame % 30 == 0:
             self.update_vehicle_list()
         
         self.video_widget.update_frame(frame)
 
 
-# ---------------- RUN APP ----------------
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MainWindow()

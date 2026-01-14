@@ -16,7 +16,7 @@ class VehicleProcessor:
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
         
-        self.detected_vehicles = {}  # {roi_id: {vehicle_id: {'id': id, 'type': type, 'count': count}}}
+        self.detected_vehicles = {}
     
     def process_rois(self, frame, vehicle_boxes, rois):
         """
@@ -33,21 +33,18 @@ class VehicleProcessor:
         if not vehicle_boxes or not rois:
             return frame
         
-        # Xử lý từng ROI
         for roi_id, roi_data in rois.items():
             x1_roi, y1_roi, x2_roi, y2_roi = roi_data['coords']
             tracker = roi_data['tracker']
             saved_ids = roi_data['saved_ids']
             
-            # Lọc vehicles trong ROI và lưu thông tin
             roi_boxes = []
-            vehicle_info_map = []  # Map index của roi_boxes với thông tin vehicle
+            vehicle_info_map = []
             
             for box in vehicle_boxes:
                 x1, y1, x2, y2, cls_name, conf = box
                 cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
                 
-                # Kiểm tra xem vehicle có trong ROI không
                 if x1_roi <= cx <= x2_roi and y1_roi <= cy <= y2_roi:
                     roi_boxes.append([x1, y1, x2, y2])
                     vehicle_info_map.append((cls_name, conf))
@@ -55,37 +52,28 @@ class VehicleProcessor:
             if not roi_boxes:
                 continue
             
-            # Update tracker
             tracked = tracker.update(roi_boxes)
             
-            # Khởi tạo dictionary cho ROI này nếu chưa có
             if roi_id not in self.detected_vehicles:
                 self.detected_vehicles[roi_id] = {}
             
-            # Vẽ kết quả và cập nhật danh sách
             for i, (x3, y3, x4, y4, vehicle_id) in enumerate(tracked):
                 cx, cy = (int(x3 + x4) // 2, int(y3 + y4) // 2)
                 
-                # Lấy thông tin vehicle tương ứng
                 if i < len(vehicle_info_map):
                     cls_name, conf = vehicle_info_map[i]
                 else:
                     cls_name = "vehicle"
                     conf = 0.0
                 
-                # Vẽ bounding box
                 cv2.rectangle(frame, (x3, y3), (x4, y4), (255, 0, 0), 1)
-                
-                # Vẽ tâm
                 cv2.circle(frame, (cx, cy), 4, (0, 0, 255), -1)
                 
-                # Vẽ label với ID, loại xe và confidence (%)
                 conf_percent = int(conf * 100)
                 label = f"ID:{vehicle_id} {cls_name} {conf_percent}%"
                 cv2.putText(frame, label, (x3, y3 - 10), 
                            cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 255, 255), 1)
                 
-                # Lưu thông tin vehicle
                 if vehicle_id not in self.detected_vehicles[roi_id]:
                     self.detected_vehicles[roi_id][vehicle_id] = {
                         'id': vehicle_id,
@@ -95,7 +83,6 @@ class VehicleProcessor:
                 
                 self.detected_vehicles[roi_id][vehicle_id]['count'] += 1
                 
-                # Lưu ảnh vehicle lần đầu phát hiện trong ROI
                 if vehicle_id not in saved_ids:
                     car_img = frame[y3:y4, x3:x4]
                     if car_img.size != 0:
